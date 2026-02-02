@@ -49,14 +49,13 @@ def signup_page(request):
     return render(request, 'signup.html')
 
 def login_page(request):
-    return render(request, 'login.html')
-
-def dashboard(request):
-    return render(request, 'dashboard.html')
-def login_view(request):
     if request.user.is_authenticated:
         return redirect('dashboard')
     return render(request, "login.html")
+
+def dashboard(request):
+    return render(request, 'dashboard.html')
+
 
 
 
