@@ -9,8 +9,8 @@ from core.views import home, signup, signup_page, login_page, dashboard,habits_p
 
 
 urlpatterns = [
-    path('', home),
-
+    
+    path('', login_view, name='login'),
     path('admin/', admin.site.urls),
     path('signup/', signup_page),
     path('login/', login_page),

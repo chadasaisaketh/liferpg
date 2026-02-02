@@ -53,6 +53,10 @@ def login_page(request):
 
 def dashboard(request):
     return render(request, 'dashboard.html')
+def login_view(request):
+    if request.user.is_authenticated:
+        return redirect('dashboard')
+    return render(request, "login.html")
 
 
 
