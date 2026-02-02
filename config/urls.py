@@ -4,7 +4,7 @@ from rest_framework_simplejwt.views import (
     TokenObtainPairView,
     TokenRefreshView,
 )
-from core.views import home, signup, signup_page, login_page, dashboard,habits_page,habits_api, toggle_habit_done,player_xp,
+from core.views import home, signup, signup_page, login_page, dashboard,habits_page,habits_api, toggle_habit_done,player_xp
 
 
 
