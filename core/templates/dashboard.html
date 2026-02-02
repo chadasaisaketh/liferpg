@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard | Life RPG{% endblock %}
+
+{% block content %}
+
+<!-- HEADER -->
+<h1 class="text-3xl font-bold text-yellow-400">
+    Dashboard
+</h1>
+
+<p class="mt-2 text-gray-400">
+    Welcome back. Your journey continues.
+</p>
+
+<!-- STATS CARDS -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8">
+
+    <!-- XP -->
+    <div class="bg-gray-800 p-6 rounded-xl border border-gray-700">
+        <h3 class="text-lg font-semibold">XP</h3>
+        <p id="xpValue" class="mt-2 text-yellow-400 text-3xl font-bold">
+            0
+        </p>
+    </div>
+
+    <!-- LEVEL (COMING NEXT) -->
+    <div class="bg-gray-800 p-6 rounded-xl border border-gray-700">
+        <h3 class="text-lg font-semibold">Level</h3>
+        <p id="levelValue" class="mt-2 text-yellow-400 text-3xl font-bold">
+            1
+        </p>
+        <p class="text-sm text-gray-400 mt-1">
+            Level system coming next
+        </p>
+    </div>
+
+    <!-- STREAK (COMING NEXT) -->
+    <div class="bg-gray-800 p-6 rounded-xl border border-gray-700">
+        <h3 class="text-lg font-semibold">Streak</h3>
+        <p id="streakValue" class="mt-2 text-yellow-400 text-3xl font-bold">
+            0 days
+        </p>
+        <p class="text-sm text-gray-400 mt-1">
+            Daily habits streak
+        </p>
+    </div>
+
+</div>
+
+<!-- ================= JAVASCRIPT ================= -->
+<script>
+async function loadXP() {
+    const token = localStorage.getItem("access_token");
+
+    if (!token) {
+        window.location.href = "/login/";
+        return;
+    }
+
+    const response = await fetch("/api/xp/", {
+        headers: {
+            "Authorization": `Bearer ${token}`
+        }
+    });
+
+    if (!response.ok) {
+        console.error("Failed to fetch XP");
+        return;
+    }
+
+    const data = await response.json();
+    document.getElementById("xpValue").innerText = data.xp;
+}
+
+// Load XP on page load
+loadXP();
+</script>
+
+{% endblock %}

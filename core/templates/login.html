@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Life RPG – Login</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 flex items-center justify-center">
+
+    <!-- Card -->
+    <div class="w-full max-w-md bg-gray-900/80 backdrop-blur border border-gray-800 rounded-2xl shadow-2xl p-8">
+
+        <!-- Title -->
+        <div class="text-center mb-6">
+            <h1 class="text-4xl font-extrabold text-yellow-400 tracking-wide">
+                Life RPG
+            </h1>
+            <p class="text-gray-400 mt-2">
+                Welcome back, warrior.
+            </p>
+        </div>
+
+        <!-- Login Form -->
+        <form id="loginForm" class="space-y-5">
+
+            <div>
+                <label class="block text-sm text-gray-300 mb-1">Username</label>
+                <input
+                    id="username"
+                    type="text"
+                    placeholder="Enter your hero name"
+                    class="w-full px-4 py-3 rounded-xl bg-gray-800 text-white border border-gray-700 focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                    required
+                >
+            </div>
+
+            <div>
+                <label class="block text-sm text-gray-300 mb-1">Password</label>
+                <input
+                    id="password"
+                    type="password"
+                    placeholder="Enter your password"
+                    class="w-full px-4 py-3 rounded-xl bg-gray-800 text-white border border-gray-700 focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                    required
+                >
+            </div>
+
+            <!-- Message -->
+            <p id="message" class="text-center text-sm"></p>
+
+            <button
+                type="submit"
+                class="w-full py-3 rounded-xl bg-yellow-400 text-black font-bold hover:bg-yellow-300 transition-all duration-200"
+            >
+                Enter the Realm ⚔️
+            </button>
+        </form>
+
+        <!-- Footer -->
+        <div class="text-center mt-6">
+            <p class="text-gray-400 text-sm">
+                New here?
+                <a href="/signup/" class="text-yellow-400 hover:underline">
+                    Create your character
+                </a>
+            </p>
+        </div>
+
+    </div>
+<script>
+document.getElementById('loginForm').addEventListener('submit', async function (e) {
+    e.preventDefault();
+
+    const username = document.getElementById('username').value;
+    const password = document.getElementById('password').value;
+    const message = document.getElementById('message');
+
+    message.textContent = "Entering the realm...";
+    message.className = "text-yellow-400";
+
+    try {
+        const response = await fetch('/api/login/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                username: username,
+                password: password
+            })
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+            // 🔐 Store JWT tokens
+            localStorage.setItem('access_token', data.access);
+            localStorage.setItem('refresh_token', data.refresh);
+
+            message.textContent = "Login successful! Loading dashboard...";
+            message.className = "text-green-400";
+
+            setTimeout(() => {
+                window.location.href = "/dashboard/";
+            }, 1200);
+
+        } else {
+            message.textContent = "Invalid username or password";
+            message.className = "text-red-400";
+        }
+
+    } catch (error) {
+        message.textContent = "Server error. Try again.";
+        message.className = "text-red-400";
+    }
+});
+</script>
+
+</body>
+</html>
