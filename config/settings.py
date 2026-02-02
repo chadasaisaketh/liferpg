@@ -13,6 +13,7 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 from pathlib import Path
 from datetime import timedelta
 import dj_database_url
+import os
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -78,12 +79,14 @@ WSGI_APPLICATION = 'config.wsgi.application'
 
 # Database
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
+import dj_database_url
 
 DATABASES = {
     'default': dj_database_url.config(
-        default=os.environ.get('postgresql://liferpg_db_user:YS51GzJRlYZqKL95911OHpQwCHmYx3ln@dpg-d60drl8gjchc73f1jrsg-a/liferpg_db')
+        default=os.environ.get('DATABASE_URL')
     )
 }
+
 
 
 # Password validation
