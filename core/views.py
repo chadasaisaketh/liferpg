@@ -24,15 +24,14 @@ def login_page(request):
 def signup_page(request):
     return render(request, "signup.html")
 
-@login_required(login_url="/")
+
 def dashboard(request):
     return render(request, "dashboard.html")
 
-@login_required(login_url="/")
+
 def habits_page(request):
     return render(request, "habits.html")
 
-@login_required(login_url="/")
 def reflection_history_page(request):
     return render(request, "reflection_history.html")
 
