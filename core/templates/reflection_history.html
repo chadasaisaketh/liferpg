@@ -1,0 +1,132 @@
+{% extends "base.html" %}
+{% block title %}Reflection History | Life RPG{% endblock %}
+{% block content %}
+
+<div class="mb-6">
+    <h1 class="text-3xl font-bold text-yellow-400">📓 Reflection History</h1>
+    <p class="text-gray-400 mt-1">Track your emotional discipline over time</p>
+</div>
+
+<!-- ================= MOOD TREND GRAPH ================= -->
+<div class="bg-gray-800 border border-gray-700 rounded-xl p-5 mb-8">
+    <h3 class="font-semibold mb-3">Mood Trend</h3>
+    <canvas id="moodChart" height="120"></canvas>
+</div>
+
+<!-- ================= WEEKLY SUMMARY ================= -->
+<div class="bg-gray-800 border border-gray-700 rounded-xl p-5 mb-8">
+    <h3 class="font-semibold mb-4">Last 5 Weeks Summary</h3>
+    <div id="weeklySummary" class="grid grid-cols-1 md:grid-cols-5 gap-3"></div>
+</div>
+
+<!-- ================= HISTORY LIST ================= -->
+<div id="reflectionList" class="space-y-4"></div>
+
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+const MOOD_MAP = {
+    1: { emoji: "😞", label: "Bad" },
+    2: { emoji: "😐", label: "Okay" },
+    3: { emoji: "🙂", label: "Good" },
+    4: { emoji: "😀", label: "Great" },
+    5: { emoji: "🔥", label: "Amazing" },
+};
+
+function auth(){
+    return {
+        headers: {
+            Authorization: `Bearer ${localStorage.getItem("access_token")}`
+        }
+    }
+}
+
+async function loadReflections(){
+    const res = await fetch("/api/reflection/", auth());
+    const data = await res.json();
+
+    const list = document.getElementById("reflectionList");
+    list.innerHTML = "";
+
+    let dates = [];
+    let moods = [];
+
+    data.forEach(r => {
+        const mood = MOOD_MAP[r.mood];
+        dates.push(r.date);
+        moods.push(r.mood);
+
+        list.innerHTML += `
+        <div class="bg-gray-800 border border-gray-700 rounded-xl p-4">
+            <div class="flex justify-between text-sm text-gray-400 mb-1">
+                <span>${r.date}</span>
+                <span>${mood.emoji} ${mood.label}</span>
+            </div>
+            <p class="text-gray-200">${r.note || "No notes for this day."}</p>
+        </div>`;
+    });
+
+    renderChart(dates.reverse(), moods.reverse());
+    renderWeeklySummary(data);
+}
+
+function renderChart(labels, values){
+    const ctx = document.getElementById("moodChart").getContext("2d");
+
+    new Chart(ctx, {
+        type: "line",
+        data: {
+            labels,
+            datasets: [{
+                label: "Mood Level",
+                data: values,
+                borderColor: "#facc15",
+                backgroundColor: "rgba(250,204,21,0.2)",
+                tension: 0.4,
+                fill: true
+            }]
+        },
+        options: {
+            scales: {
+                y: {
+                    min: 1,
+                    max: 5,
+                    ticks: {
+                        stepSize: 1,
+                        callback: v => MOOD_MAP[v].emoji
+                    }
+                }
+            }
+        }
+    });
+}
+
+function renderWeeklySummary(data){
+    const box = document.getElementById("weeklySummary");
+    box.innerHTML = "";
+
+    const weeks = {};
+    data.forEach(r => {
+        const week = r.date.slice(0,7); // YYYY-MM
+        weeks[week] = weeks[week] || [];
+        weeks[week].push(r.mood);
+    });
+
+    Object.entries(weeks).slice(0,5).forEach(([week, moods]) => {
+        const avg = Math.round(moods.reduce((a,b)=>a+b,0)/moods.length);
+        const mood = MOOD_MAP[avg];
+
+        box.innerHTML += `
+        <div class="bg-gray-900 border border-gray-700 rounded-lg p-3 text-center">
+            <div class="text-sm text-gray-400">${week}</div>
+            <div class="text-3xl my-1">${mood.emoji}</div>
+            <div class="text-xs text-gray-300">${mood.label}</div>
+        </div>`;
+    });
+}
+
+loadReflections();
+</script>
+
+{% endblock %}
