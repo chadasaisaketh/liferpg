@@ -7,13 +7,17 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
 from datetime import datetime, timedelta
-
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
 from .models import (
-    Habit, HabitLog,
+    Habit,
+    HabitLog,
     PlayerProfile,
-    DailyReflection
+    DailyReflection,
+    GymLog,
+    StepsLog,
+    WorkoutSet,
 )
-
 # ======================================================
 # AUTH / PAGES
 # ======================================================
@@ -224,3 +228,180 @@ def daily_reflection(request):
         {"date": r.date, "mood": r.mood, "note": r.note}
         for r in reflections
     ])
+
+@csrf_exempt
+@login_required(login_url="/")
+def log_gym(request):
+    import json
+    data = json.loads(request.body)
+
+    gym_log, _ = GymLog.objects.get_or_create(
+        user=request.user,
+        body_part=data["body_part"],
+        date=timezone.now().date()
+    )
+
+    WorkoutSet.objects.create(
+        gym_log=gym_log,
+        sets=int(data.get("sets", 0)),
+        reps=int(data.get("reps", 0)),
+        weight=float(data.get("weight") or 0),
+        duration_minutes=int(data.get("duration_minutes", 0)),
+        intensity=data.get("intensity", "medium")
+    )
+
+    return JsonResponse({"status": "logged"})
+
+# ======================================================
+# MUSCLE SYMMETRY (WORKING)
+# ======================================================
+
+@login_required(login_url="/")
+def weekly_symmetry(request):
+    start = timezone.now().date() - timedelta(days=6)
+    loads = {}
+    total = 0
+
+    for part, _ in GymLog.BODY_PARTS:
+        load = sum(
+            s.training_load()
+            for s in WorkoutSet.objects.filter(
+                gym_log__user=request.user,
+                gym_log__body_part=part,
+                gym_log__date__gte=start
+            )
+        )
+        loads[part] = load
+        total += load
+
+    return JsonResponse({
+        part: {
+            "percent": int((load / total) * 100) if total else 0,
+            "status": "balanced" if 10 <= (load / total * 100 if total else 0) <= 25
+            else "under" if load else "over"
+        }
+        for part, load in loads.items()
+    })
+
+# ======================================================
+# ✅ WEEKLY LOAD (FIXED, FINAL)
+# ======================================================
+
+@login_required(login_url="/")
+def weekly_trend(request):
+    today = timezone.now().date()
+    start = today - timedelta(days=6)
+
+    data = {}
+    for i in range(7):
+        day = start + timedelta(days=i)
+        load = sum(
+            s.training_load()
+            for s in WorkoutSet.objects.filter(
+                gym_log__user=request.user,
+                gym_log__date=day
+            )
+        )
+        data[day.strftime("%a")] = load
+
+    return JsonResponse(data)
+
+# ======================================================
+# ✅ RECOVERY SCORE (FIXED – THIS WAS THE ISSUE)
+# ======================================================
+def body_page(request):
+    return render(request, "body.html")
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def recovery_score(request):
+    today = timezone.now().date()
+
+    today_load = sum(
+        s.training_load()
+        for s in WorkoutSet.objects.filter(
+            gym_log__user=request.user,
+            gym_log__date=today
+        )
+    )
+
+    past_sets = WorkoutSet.objects.filter(
+        gym_log__user=request.user,
+        gym_log__date__lt=today,
+        gym_log__date__gte=today - timedelta(days=6)
+    )
+
+    past_load = sum(s.training_load() for s in past_sets)
+    avg_load = past_load / 6 if past_load else 0
+
+    if avg_load == 0:
+        score = 100
+    else:
+        fatigue = today_load / avg_load
+        score = int(max(0, min(100, 100 - fatigue * 40)))
+
+    loads = weekly_load_array(request.user)
+
+    warning = None
+    if loads[-1] > sum(loads[:-1]) / 6 * 1.6:
+        warning = "⚠ Sudden spike — injury risk"
+    elif all(l < 50 for l in loads):
+        warning = "⚠ Load too low — no progression"
+
+    return Response({
+        "score": score,
+        "warning": warning
+    })
+# ======================================================
+# STEPS (ALREADY WORKING)
+# ======================================================
+
+@api_view(["GET", "POST"])
+@permission_classes([IsAuthenticated])
+def steps_api(request):
+    today = timezone.now().date()
+
+    if request.method == "POST":
+        StepsLog.objects.update_or_create(
+            user=request.user,
+            date=today,
+            defaults={
+                "steps": int(request.data["steps"]),
+                "target": int(request.data.get("target", 8000))
+            }
+        )
+        return Response({"status": "saved"})
+
+    log = StepsLog.objects.filter(user=request.user, date=today).first()
+    return Response({
+        "steps": log.steps if log else 0,
+        "target": log.target if log else 8000
+    })
+
+
+@login_required(login_url="/")
+def weekly_steps(request):
+    today = timezone.now().date()
+    start = today - timedelta(days=6)
+
+    data = {}
+
+    for i in range(7):
+        day = start + timedelta(days=i)
+        log = StepsLog.objects.filter(user=request.user, date=day).first()
+        data[day.strftime("%a")] = log.steps if log else 0
+
+    return JsonResponse(data)
+
+def weekly_load_array(user):
+    today = timezone.now().date()
+    start = today - timedelta(days=6)
+
+    loads = []
+    for i in range(7):
+        day = start + timedelta(days=i)
+        sets = WorkoutSet.objects.filter(
+            gym_log__user=user,
+            gym_log__date=day
+        )
+        loads.append(sum(s.training_load() for s in sets))
+    return loads

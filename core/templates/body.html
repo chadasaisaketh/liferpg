@@ -1,0 +1,279 @@
+{% extends "base.html" %}
+{% block title %}Body | Life RPG{% endblock %}
+{% block content %}
+
+<!-- ================= HEADER ================= -->
+<div class="flex items-center justify-between mb-8">
+  <div>
+    <h1 class="text-4xl font-bold text-yellow-400">Body</h1>
+    <p class="text-gray-400 mt-1">Train balance. Build strength.</p>
+  </div>
+  <div class="px-5 py-3 rounded-xl bg-gray-800 border border-gray-700">
+    <div class="text-sm text-gray-400">Status</div>
+    <div id="bodyStatus" class="text-lg font-bold text-green-400">Balanced</div>
+  </div>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+<!-- LEFT -->
+<div class="lg:col-span-2 space-y-6">
+
+<!-- MUSCLE SYMMETRY -->
+<div class="bg-gray-900 border border-gray-800 rounded-2xl p-6">
+  <h3 class="text-lg font-semibold mb-4">🧍 Muscle Symmetry</h3>
+  <div class="grid grid-cols-3 gap-4 text-center">
+    <div id="chest" class="muscle-card">Chest <span class="percent">0%</span></div>
+    <div id="arms" class="muscle-card">Arms <span class="percent">0%</span></div>
+    <div id="back" class="muscle-card">Back <span class="percent">0%</span></div>
+    <div id="core" class="muscle-card">Core <span class="percent">0%</span></div>
+    <div id="shoulders" class="muscle-card">Shoulders <span class="percent">0%</span></div>
+    <div id="calves" class="muscle-card">Calves <span class="percent">0%</span></div>
+    <div id="legs" class="muscle-card col-span-3">Legs <span class="percent">0%</span></div>
+  </div>
+</div>
+
+<!-- WEEKLY LOAD -->
+<div class="bg-gray-900 border border-gray-800 rounded-2xl p-6">
+  <h3 class="text-lg font-semibold mb-4">📈 Weekly Training Load</h3>
+  <div id="weeklyBars" class="flex items-end gap-3 h-32"></div>
+</div>
+
+<!-- WEEKLY STEPS -->
+<div class="bg-gray-900 border border-gray-800 rounded-2xl p-6">
+  <h3 class="text-lg font-semibold mb-4">👣 Weekly Steps</h3>
+  <svg id="stepsChart" viewBox="0 0 300 120" class="w-full h-32"></svg>
+</div>
+
+</div>
+
+<!-- RIGHT -->
+<div class="space-y-6">
+
+<!-- LOG WORKOUT -->
+<div class="bg-gray-900 border border-gray-800 rounded-2xl p-6">
+  <h3 class="text-lg font-semibold mb-4">➕ Log Workout</h3>
+
+  <select id="bodyPart" class="input">
+    <option value="chest">Chest</option>
+    <option value="back">Back</option>
+    <option value="shoulders">Shoulders</option>
+    <option value="arms">Arms</option>
+    <option value="legs">Legs</option>
+    <option value="core">Core</option>
+    <option value="calves">Calves</option>
+  </select>
+
+  <div class="grid grid-cols-3 gap-2 mt-2">
+    <input id="sets" type="number" placeholder="Sets" class="input">
+    <input id="reps" type="number" placeholder="Reps" class="input">
+    <input id="weight" type="number" placeholder="Kg" class="input">
+  </div>
+
+  <div class="grid grid-cols-2 gap-2 mt-2">
+    <input id="duration" type="number" placeholder="Minutes" class="input">
+    <select id="intensity" class="input">
+      <option value="low">Low</option>
+      <option value="medium">Medium</option>
+      <option value="high">High</option>
+    </select>
+  </div>
+
+  <button onclick="logGym()" class="mt-4 w-full bg-yellow-400 text-black py-2 rounded-xl font-bold">
+    Log Workout
+  </button>
+</div>
+
+<!-- STEPS TODAY -->
+<div class="bg-gray-900 border border-gray-800 rounded-2xl p-6">
+  <h3 class="text-lg font-semibold mb-3">👣 Steps Today</h3>
+  <div class="w-full bg-gray-800 rounded-full h-3 mb-2">
+    <div id="stepsBar" class="h-3 rounded-full bg-yellow-400" style="width:0%"></div>
+  </div>
+  <div class="text-sm mb-3">
+    <span id="stepsCount">0</span> / <span id="stepsTarget">8000</span> steps
+  </div>
+  <div class="grid grid-cols-2 gap-2">
+    <input id="stepsInput" type="number" placeholder="Steps" class="input">
+    <input id="stepsTargetInput" type="number" placeholder="Target" class="input">
+  </div>
+  <button onclick="saveSteps()" class="mt-3 w-full bg-gray-700 py-2 rounded-xl">Update Steps</button>
+</div>
+
+<!-- RECOVERY -->
+<div class="bg-gray-900 border border-gray-800 rounded-2xl p-6">
+  <h3 class="text-lg font-semibold mb-2">🧠 Recovery</h3>
+  <div id="recoveryScore" class="text-3xl font-bold text-green-400">--%</div>
+  <p id="recoveryText" class="text-sm text-gray-400"></p>
+  <p id="overloadWarning" class="text-xs text-red-400 mt-2"></p>
+</div>
+
+</div>
+</div>
+
+<style>
+.muscle-card{background:#1f2937;border-radius:16px;height:90px;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.muscle-card.balanced{background:#14532d}
+.muscle-card.over{background:#7f1d1d}
+.muscle-card.under{background:#1e3a8a}
+.input{background:#1f2937;border:1px solid #374151;border-radius:10px;padding:10px;color:white}
+.weekly-bar{width:20px;border-radius:6px}
+.weekly-bar.active-day{background:#facc15}
+.weekly-bar.rest-day{background:#374151}
+.line{fill:none;stroke:#38bdf8;stroke-width:3}
+.dot{fill:#38bdf8}
+</style>
+
+<script>
+function authHeaders(json=false){
+  const t=localStorage.getItem("access_token");
+  return {headers:{Authorization:`Bearer ${t}`,...(json&&{"Content-Type":"application/json"})}};
+}
+
+/* SYMMETRY */
+async function loadSymmetry(){
+  const r=await fetch("/api/body/symmetry/",authHeaders());
+  const d=await r.json();
+  let bad=false;
+  Object.entries(d).forEach(([p,i])=>{
+    const el=document.getElementById(p);
+    if(!el) return;
+    el.className="muscle-card "+i.status;
+    el.querySelector(".percent").innerText=i.percent+"%";
+    if(i.status!=="balanced") bad=true;
+  });
+  bodyStatus.innerText=bad?"Imbalanced":"Balanced";
+}
+
+/* WEEKLY LOAD */
+async function loadWeeklyTrend(){
+  const r=await fetch("/api/body/trend/",authHeaders());
+  const d=await r.json();
+  weeklyBars.innerHTML="";
+  const vals=Object.values(d);
+  if(!vals.some(v=>v>0)){
+    weeklyBars.innerHTML="<p class='text-sm text-gray-400'>No workouts logged this week</p>";
+    return;
+  }
+  const max=Math.max(...vals,1);
+  Object.entries(d).forEach(([day,load])=>{
+    const b=document.createElement("div");
+    b.className="weekly-bar "+(load?"active-day":"rest-day");
+    b.style.height=load?Math.max(20,(load/max)*120)+"px":"6px";
+    weeklyBars.appendChild(b);
+  });
+}
+
+/* STEPS */
+async function loadSteps(){
+  const r=await fetch("/api/body/steps/",authHeaders());
+  const d=await r.json();
+  const pct=Math.min(100,(d.steps/d.target)*100);
+  stepsBar.style.width=pct+"%";
+  stepsCount.innerText=d.steps;
+  stepsTarget.innerText=d.target;
+}
+
+async function saveSteps(){
+  await fetch("/api/body/steps/",{
+    method:"POST",
+    ...authHeaders(true),
+    body:JSON.stringify({
+      steps:stepsInput.value||0,
+      target:stepsTargetInput.value||8000
+    })
+  });
+  loadSteps(); loadWeeklySteps();
+}
+
+/* WEEKLY STEPS LINE */
+
+async function loadWeeklySteps(){
+  const r = await fetch("/api/body/steps/weekly/", authHeaders());
+  const data = await r.json();
+
+  let values = [];
+
+  // ✅ Handle ALL backend formats safely
+  if (Array.isArray(data)) {
+    if (typeof data[0] === "number") {
+      values = data;
+    } else {
+      values = data.map(d => d.steps || 0);
+    }
+  } else {
+    values = Object.values(data);
+  }
+
+  const svg = document.getElementById("stepsChart");
+  svg.innerHTML = "";
+
+  if (!values.some(v => v > 0)) {
+    svg.innerHTML =
+      `<text x="50%" y="60%" text-anchor="middle" fill="#9ca3af">
+        No steps logged this week
+      </text>`;
+    return;
+  }
+
+  const max = Math.max(...values, 1);
+  const stepX = 260 / (values.length - 1 || 1);
+
+  let pathD = values.map((v, i) => {
+    const x = 20 + i * stepX;
+    const y = 100 - (v / max) * 80;
+    return `${i === 0 ? "M" : "L"} ${x} ${y}`;
+  }).join(" ");
+
+  const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+  path.setAttribute("d", pathD);
+  path.setAttribute("class", "line");
+  svg.appendChild(path);
+
+  values.forEach((v, i) => {
+    const c = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+    c.setAttribute("cx", 20 + i * stepX);
+    c.setAttribute("cy", 100 - (v / max) * 80);
+    c.setAttribute("r", 4);
+    c.setAttribute("class", "dot");
+    svg.appendChild(c);
+  });
+}
+
+
+
+/* RECOVERY */
+async function loadRecovery(){
+  const r=await fetch("/api/body/recovery/",authHeaders());
+  const d=await r.json();
+  recoveryScore.innerText=d.score+"%";
+  recoveryText.innerText=d.score>=70?"Recovered well":d.score>=40?"Moderate fatigue":"High fatigue";
+  overloadWarning.innerText=d.score<40?"⚠ Progressive overload risk":"";
+}
+
+/* LOG GYM */
+async function logGym(){
+  await fetch("/api/body/gym/",{
+    method:"POST",
+    ...authHeaders(true),
+    body:JSON.stringify({
+      body_part:bodyPart.value,
+      sets:sets.value||0,
+      reps:reps.value||0,
+      weight:weight.value||null,
+      duration_minutes:duration.value||0,
+      intensity:intensity.value
+    })
+  });
+  loadSymmetry(); loadWeeklyTrend(); loadRecovery();
+}
+
+/* INIT */
+loadSymmetry();
+loadWeeklyTrend();
+loadSteps();
+loadWeeklySteps();
+loadRecovery();
+</script>
+
+{% endblock %}

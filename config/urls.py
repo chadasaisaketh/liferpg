@@ -6,54 +6,92 @@ from rest_framework_simplejwt.views import (
 )
 
 from core.views import (
-    signup,
-    signup_page,
+    # Pages
     login_page,
+    signup_page,
     dashboard,
     habits_page,
-    habits_api,
-    toggle_habit_done,
+    reflection_history_page,
+    body_page,
+
+    # Auth / Users
+    signup,
     player_xp,
 
-    # 🔽 SAFE ADDITIONS
+    # Habits
+    habits_api,
+    toggle_habit_done,
     daily_habit_progress,
     weekly_progress,
     monthly_heatmap,
+
+    # Reflection
     daily_reflection,
-    reflection_history_page,
+
+    # Body
+    log_gym,
+    weekly_symmetry,
+    weekly_trend,
+    recovery_score,
+    steps_api,
+    weekly_steps,
 )
 
 urlpatterns = [
 
-    # 🔐 ROOT → LOGIN (FIRST PAGE ALWAYS)
-    path('', login_page, name='login'),
+    # =========================
+    # ROOT / ADMIN
+    # =========================
+    path("", login_page, name="login"),
+    path("admin/", admin.site.urls),
+    path("api/body/steps/weekly/", weekly_steps),
 
-    path('admin/', admin.site.urls),
+    # =========================
+    # AUTH PAGES
+    # =========================
+    path("login/", login_page),
+    path("signup/", signup_page),
 
-    # Auth pages
-    path('signup/', signup_page),
-    path('login/', login_page),
+    # =========================
+    # APP PAGES
+    # =========================
+    path("dashboard/", dashboard),
+    path("habits/", habits_page),
+    path("reflections/", reflection_history_page),
+    path("body/", body_page),
 
-    # App pages
-    path('dashboard/', dashboard),
-    path('habits/', habits_page),
-    path('reflections/', reflection_history_page),
+    # =========================
+    # AUTH APIs (JWT)
+    # =========================
+    path("api/signup/", signup),
+    path("api/login/", TokenObtainPairView.as_view(), name="token_obtain_pair"),
+    path("api/token/refresh/", TokenRefreshView.as_view(), name="token_refresh"),
 
-    # Habits APIs
-    path('api/habits/', habits_api),
-    path('api/habits/<int:habit_id>/toggle/', toggle_habit_done),
-    path('api/xp/', player_xp),
+    # =========================
+    # HABITS APIs
+    # =========================
+    path("api/habits/", habits_api),
+    path("api/habits/<int:habit_id>/toggle/", toggle_habit_done),
+    path("api/xp/", player_xp),
 
-    # Progress APIs
-    path('api/habits/progress/daily/', daily_habit_progress),
-    path('api/habits/progress/weekly/', weekly_progress),
-    path('api/habits/progress/monthly/', monthly_heatmap),
+    # =========================
+    # HABIT PROGRESS APIs
+    # =========================
+    path("api/habits/progress/daily/", daily_habit_progress),
+    path("api/habits/progress/weekly/", weekly_progress),
+    path("api/habits/progress/monthly/", monthly_heatmap),
 
-    # Reflection API
-    path('api/reflection/', daily_reflection),
+    # =========================
+    # REFLECTION API
+    # =========================
+    path("api/reflection/", daily_reflection),
 
-    # Auth APIs
-    path('api/signup/', signup),
-    path('api/login/', TokenObtainPairView.as_view()),
-    path('api/token/refresh/', TokenRefreshView.as_view()),
+    # =========================
+    # BODY APIs
+    # =========================
+    path("api/body/gym/", log_gym),
+    path("api/body/symmetry/", weekly_symmetry),
+    path("api/body/trend/", weekly_trend),      # 📈 weekly load trend
+    path("api/body/recovery/", recovery_score), # 🧠 recovery score
+    path("api/body/steps/", steps_api),
 ]
