@@ -229,8 +229,8 @@ def daily_reflection(request):
         for r in reflections
     ])
 
-@csrf_exempt
-@login_required(login_url="/")
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
 def log_gym(request):
     import json
     data = json.loads(request.body)
@@ -256,7 +256,8 @@ def log_gym(request):
 # MUSCLE SYMMETRY (WORKING)
 # ======================================================
 
-@login_required(login_url="/")
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
 def weekly_symmetry(request):
     start = timezone.now().date() - timedelta(days=6)
     loads = {}
@@ -286,8 +287,8 @@ def weekly_symmetry(request):
 # ======================================================
 # ✅ WEEKLY LOAD (FIXED, FINAL)
 # ======================================================
-
-@login_required(login_url="/")
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
 def weekly_trend(request):
     today = timezone.now().date()
     start = today - timedelta(days=6)
