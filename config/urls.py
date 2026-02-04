@@ -35,6 +35,14 @@ from core.views import (
     recovery_score,
     steps_api,
     weekly_steps,
+    food_page,
+    food_target,
+    food_today,
+    weekly_food_compliance,
+    food_daily_comparison,
+    food_weekly_average,
+    food_monthly_heatmap,
+    food_by_date,
 )
 
 urlpatterns = [
@@ -45,12 +53,16 @@ urlpatterns = [
     path("", login_page, name="login"),
     path("admin/", admin.site.urls),
     path("api/body/steps/weekly/", weekly_steps),
+    path("api/food/weekly/", weekly_food_compliance),
+    path("api/food/weekly/average/", food_weekly_average),
+    path("api/food/by-date/", food_by_date),
 
     # =========================
     # AUTH PAGES
     # =========================
     path("login/", login_page),
     path("signup/", signup_page),
+    path("api/food/compare/", food_daily_comparison),
 
     # =========================
     # APP PAGES
@@ -94,4 +106,9 @@ urlpatterns = [
     path("api/body/trend/", weekly_trend),      # 📈 weekly load trend
     path("api/body/recovery/", recovery_score), # 🧠 recovery score
     path("api/body/steps/", steps_api),
+     path("food/", food_page),
+     path("api/food/today/", food_today),
+path("api/food/target/", food_target),
+path("api/food/monthly/", food_monthly_heatmap),
+
 ]

@@ -26,7 +26,7 @@ class PlayerProfile(models.Model):
     daily_streak = models.IntegerField(default=0)
     weekly_streak = models.IntegerField(default=0)
     last_completed_date = models.DateField(null=True, blank=True)
-
+    protein_streak = models.IntegerField(default=0) 
 @receiver(post_save, sender=User)
 def create_profile(sender, instance, created, **kwargs):
     if created:
@@ -99,3 +99,29 @@ class StepsLog(models.Model):
 
     class Meta:
         unique_together = ("user", "date")
+
+class FoodLog(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    date = models.DateField(default=timezone.now)
+
+    calories = models.IntegerField(default=0)
+
+    protein = models.IntegerField(default=0)  # grams
+    carbs = models.IntegerField(default=0)
+    fats = models.IntegerField(default=0)
+
+    micronutrients = models.TextField(blank=True)  # free text
+    vitamins = models.TextField(blank=True)        # free text
+    food_xp_awarded = models.BooleanField(default=False)
+
+    class Meta:
+        unique_together = ("user", "date")
+
+
+class FoodTarget(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
+
+    calories = models.IntegerField(default=2000)
+    protein = models.IntegerField(default=100)
+    carbs = models.IntegerField(default=250)
+    fats = models.IntegerField(default=70)

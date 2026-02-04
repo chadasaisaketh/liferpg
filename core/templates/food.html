@@ -1,0 +1,210 @@
+{% extends "base.html" %}
+{% block title %}Food | Life RPG{% endblock %}
+{% block content %}
+
+<!-- HEADER -->
+<div class="flex items-center justify-between mb-8">
+  <div>
+    <h1 id="foodTitle" class="text-4xl font-bold text-yellow-400">Food</h1>
+    <p class="text-gray-400 mt-1">Fuel your body. Track with clarity.</p>
+  </div>
+  <a href="/body/" class="text-sm text-yellow-400 underline">← Back to Body</a>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+<!-- LEFT -->
+<div class="lg:col-span-2 space-y-6">
+
+<!-- CALORIES -->
+<div class="bg-gray-900 border border-gray-800 rounded-2xl p-6">
+  <h3 class="text-lg font-semibold mb-3">🔥 Calories</h3>
+
+  <div class="flex justify-between text-sm mb-1">
+    <span><span id="caloriesNow">0</span> kcal</span>
+    <span>Target <span id="caloriesTarget">0</span></span>
+  </div>
+
+  <div class="w-full bg-gray-800 h-3 rounded-full mb-3">
+    <div id="caloriesBar" class="h-3 rounded-full bg-yellow-400"></div>
+  </div>
+
+  <div id="calorieCompare" class="text-xs text-gray-400 mb-3"></div>
+
+  <input id="caloriesInput" type="number" class="input" placeholder="Add calories">
+</div>
+
+<!-- MACROS -->
+<div class="bg-gray-900 border border-gray-800 rounded-2xl p-6">
+  <h3 class="text-lg font-semibold mb-4">🥗 Macros</h3>
+
+  <div class="space-y-4">
+    <div>
+      <div class="flex justify-between text-sm mb-1">
+        <span>Protein</span>
+        <span><span id="proteinNow">0</span>/<span id="proteinTarget">0</span> g</span>
+      </div>
+      <div class="bar"><div id="proteinBar" class="bar-fill"></div></div>
+      <input id="proteinInput" type="number" class="input mt-2" placeholder="Protein (g)">
+    </div>
+
+    <div>
+      <div class="flex justify-between text-sm mb-1">
+        <span>Carbs</span>
+        <span><span id="carbsNow">0</span>/<span id="carbsTarget">0</span> g</span>
+      </div>
+      <div class="bar"><div id="carbsBar" class="bar-fill"></div></div>
+      <input id="carbsInput" type="number" class="input mt-2" placeholder="Carbs (g)">
+    </div>
+
+    <div>
+      <div class="flex justify-between text-sm mb-1">
+        <span>Fats</span>
+        <span><span id="fatsNow">0</span>/<span id="fatsTarget">0</span> g</span>
+      </div>
+      <div class="bar"><div id="fatsBar" class="bar-fill"></div></div>
+      <input id="fatsInput" type="number" class="input mt-2" placeholder="Fats (g)">
+    </div>
+  </div>
+</div>
+
+<!-- MICROS -->
+<div class="bg-gray-900 border border-gray-800 rounded-2xl p-6">
+  <h3 class="text-lg font-semibold mb-3">🧬 Micros & Vitamins</h3>
+  <textarea id="microsInput" class="input mb-2" rows="2"></textarea>
+  <textarea id="vitaminsInput" class="input" rows="2"></textarea>
+</div>
+
+<!-- WEEKLY COMPLIANCE -->
+<div class="bg-gray-900 border border-gray-800 rounded-2xl p-6">
+  <h3 class="text-lg font-semibold mb-3">📊 Weekly Compliance</h3>
+  <div id="foodBars" class="flex items-end gap-3 h-24"></div>
+  <div class="text-xs text-gray-400 mt-2">
+    Weekly avg calories: <span id="weeklyAvg">—</span>
+  </div>
+</div>
+
+<button onclick="saveFood()" class="w-full bg-yellow-400 text-black py-3 rounded-xl font-bold">
+  Save
+</button>
+
+</div>
+
+<!-- RIGHT -->
+<div class="space-y-6">
+
+<!-- MONTHLY HEATMAP -->
+<div class="bg-gray-900 border border-gray-800 rounded-2xl p-6">
+  <h3 class="text-lg font-semibold mb-4">🗓 Monthly Calories</h3>
+  <div id="heatmap" class="grid grid-cols-7 gap-2"></div>
+</div>
+
+<!-- STREAKS -->
+<div class="bg-gray-900 border border-gray-800 rounded-2xl p-6">
+  <div class="text-sm text-gray-400 mb-1">🥩 Protein Streak</div>
+  <div id="proteinStreak" class="text-2xl font-bold text-yellow-400">0 days</div>
+
+  <div id="perfectBadge" class="hidden mt-3 px-3 py-2 rounded-xl bg-green-600 text-black font-bold text-sm text-center">
+    🏅 Perfect Day
+  </div>
+</div>
+
+</div>
+</div>
+
+<style>
+.input{width:100%;padding:10px;background:#1f2937;border-radius:10px;border:1px solid #374151;color:white}
+.bar{width:100%;height:10px;background:#1f2937;border-radius:999px}
+.bar-fill{height:100%;background:#22c55e}
+.heat-day{width:28px;height:28px;border-radius:6px;background:#374151;cursor:pointer}
+.heat-perfect{background:#22c55e}
+.heat-ok{background:#facc15}
+.heat-bad{background:#ef4444}
+</style>
+
+<script>
+function auth(){
+  return { headers:{
+    "Authorization":"Bearer "+localStorage.getItem("access_token"),
+    "Content-Type":"application/json"
+  }}
+}
+
+async function loadFood(date=null){
+  const url = date ? `/api/food/by-date/?date=${date}` : "/api/food/today/";
+  const r = await fetch(url, auth());
+  const d = await r.json();
+  if(!d.log) return;
+
+  document.getElementById("foodTitle").innerText = date ? `Food — ${date}` : "Food";
+
+  const log=d.log, t=d.target;
+
+  caloriesNow.innerText=log.calories;
+  caloriesTarget.innerText=t.calories;
+  caloriesBar.style.width=Math.min(100,log.calories/t.calories*100)+"%";
+
+  proteinNow.innerText=log.protein;
+  proteinTarget.innerText=t.protein;
+  proteinBar.style.width=Math.min(100,log.protein/t.protein*100)+"%";
+
+  carbsNow.innerText=log.carbs;
+  carbsTarget.innerText=t.carbs;
+  carbsBar.style.width=Math.min(100,log.carbs/t.carbs*100)+"%";
+
+  fatsNow.innerText=log.fats;
+  fatsTarget.innerText=t.fats;
+  fatsBar.style.width=Math.min(100,log.fats/t.fats*100)+"%";
+
+  microsInput.value=log.micronutrients||"";
+  vitaminsInput.value=log.vitamins||"";
+
+  proteinStreak.innerText=(d.protein_streak||0)+" days";
+
+  d.perfect_day ? perfectBadge.classList.remove("hidden") : perfectBadge.classList.add("hidden");
+
+  loadWeeklyAvg();
+}
+
+async function loadWeeklyAvg(){
+  try{
+    const r=await fetch("/api/food/weekly/average/",auth());
+    if(!r.ok) return;
+    const d=await r.json();
+    weeklyAvg.innerText=d.average;
+  }catch(e){}
+}
+
+async function loadMonthlyHeatmap(){
+  const r=await fetch("/api/food/monthly/",auth());
+  const data=await r.json();
+  heatmap.innerHTML="";
+  Object.entries(data).forEach(([date,v])=>{
+    const c=document.createElement("div");
+    c.className="heat-day heat-"+v.level;
+    c.title=`${date}: ${v.calories} kcal`;
+    c.onclick=()=>loadFood(date);
+    heatmap.appendChild(c);
+  });
+}
+
+async function saveFood(){
+  await fetch("/api/food/today/",{
+    method:"POST",...auth(),
+    body:JSON.stringify({
+      calories:caloriesInput.value,
+      protein:proteinInput.value,
+      carbs:carbsInput.value,
+      fats:fatsInput.value,
+      micronutrients:microsInput.value,
+      vitamins:vitaminsInput.value
+    })
+  });
+  loadFood();
+}
+
+loadMonthlyHeatmap();
+loadFood();
+</script>
+
+{% endblock %}

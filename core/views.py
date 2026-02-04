@@ -17,6 +17,8 @@ from .models import (
     GymLog,
     StepsLog,
     WorkoutSet,
+    FoodLog,
+    FoodTarget,
 )
 # ======================================================
 # AUTH / PAGES
@@ -406,3 +408,292 @@ def weekly_load_array(user):
         )
         loads.append(sum(s.training_load() for s in sets))
     return loads
+
+@api_view(["GET", "POST"])
+@permission_classes([IsAuthenticated])
+def food_api(request):
+    today = timezone.now().date()
+
+    if request.method == "POST":
+        FoodLog.objects.update_or_create(
+            user=request.user,
+            date=today,
+            defaults=request.data
+        )
+        return Response({"status": "saved"})
+
+    log = FoodLog.objects.filter(user=request.user, date=today).first()
+
+    if not log:
+        return Response({"empty": True})
+
+    return Response({
+        "calories": log.calories,
+        "protein": log.protein,
+        "carbs": log.carbs,
+        "fats": log.fats,
+        "targets": {
+            "calories": log.target_calories,
+            "protein": log.target_protein,
+            "carbs": log.target_carbs,
+            "fats": log.target_fats,
+        },
+        "micros": {
+            "fiber": log.fiber,
+            "iron": log.iron,
+            "calcium": log.calcium,
+            "vitamin_d": log.vitamin_d,
+            "b12": log.b12,
+        }
+    })
+
+def food_page(request):
+    return render(request, "food.html")
+
+
+def safe_int(val, default):
+    try:
+        return int(val)
+    except (TypeError, ValueError):
+        return default
+
+
+@api_view(["GET", "POST"])
+@permission_classes([IsAuthenticated])
+def food_today(request):
+    today = timezone.now().date()
+
+    log, _ = FoodLog.objects.get_or_create(
+        user=request.user,
+        date=today
+    )
+
+    target, _ = FoodTarget.objects.get_or_create(
+        user=request.user
+    )
+
+    profile = PlayerProfile.objects.get(user=request.user)
+    xp_awarded = False
+
+    if request.method == "POST":
+        # ---------- SAVE VALUES ----------
+        log.calories = safe_int(request.data.get("calories"), log.calories)
+        log.protein  = safe_int(request.data.get("protein"), log.protein)
+        log.carbs    = safe_int(request.data.get("carbs"), log.carbs)
+        log.fats     = safe_int(request.data.get("fats"), log.fats)
+
+        log.micronutrients = request.data.get(
+            "micronutrients", log.micronutrients
+        ) or log.micronutrients
+
+        log.vitamins = request.data.get(
+            "vitamins", log.vitamins
+        ) or log.vitamins
+
+        log.save()
+
+        # ---------- PROTEIN STREAK ----------
+        yesterday = today - timedelta(days=1)
+
+        if log.protein >= target.protein:
+            if FoodLog.objects.filter(
+                user=request.user,
+                date=yesterday,
+                protein__gte=target.protein
+            ).exists():
+                profile.protein_streak += 1
+            else:
+                profile.protein_streak = 1
+        else:
+            profile.protein_streak = 0
+
+        # ---------- FOOD XP (ONCE PER DAY) ----------
+        food_xp = 0
+
+        if log.calories >= int(target.calories * 0.95):
+            food_xp += 20
+
+        if log.protein >= int(target.protein * 0.90):
+            food_xp += 20
+
+        if food_xp > 0 and not log.food_xp_awarded:
+            profile.xp += food_xp
+            log.food_xp_awarded = True
+            xp_awarded = True
+
+        profile.save()
+        log.save()
+
+    return Response({
+        "log": {
+            "calories": log.calories,
+            "protein": log.protein,
+            "carbs": log.carbs,
+            "fats": log.fats,
+            "micronutrients": log.micronutrients,
+            "vitamins": log.vitamins,
+        },
+        "target": {
+            "calories": target.calories,
+            "protein": target.protein,
+            "carbs": target.carbs,
+            "fats": target.fats,
+        },
+        "xp_awarded": xp_awarded,
+        "protein_streak": profile.protein_streak
+    })
+
+
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def food_target(request):
+    FoodTarget.objects.update_or_create(
+        user=request.user,
+        defaults={
+            "calories": request.data.get("calories", 2000),
+            "protein": request.data.get("protein", 100),
+            "carbs": request.data.get("carbs", 250),
+            "fats": request.data.get("fats", 70),
+        }
+    )
+    return Response({"status": "target_saved"})
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def weekly_food_compliance(request):
+    today = timezone.now().date()
+    start = today - timedelta(days=6)
+    target = FoodTarget.objects.get(user=request.user)
+
+    data = {}
+
+    for i in range(7):
+        day = start + timedelta(days=i)
+        log = FoodLog.objects.filter(user=request.user, date=day).first()
+
+        if not log:
+            data[day.strftime("%a")] = 0
+            continue
+
+        calorie_ok = abs(log.calories - target.calories) <= target.calories * 0.05
+        protein_ok = log.protein >= target.protein
+
+        data[day.strftime("%a")] = 1 if calorie_ok and protein_ok else 0
+
+    return Response(data)
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def food_weekly_average(request):
+    today = timezone.now().date()
+    start = today - timedelta(days=6)
+
+    logs = FoodLog.objects.filter(
+        user=request.user,
+        date__gte=start
+    )
+
+    total = sum(l.calories for l in logs)
+    days = logs.count() or 1
+
+    return Response({
+        "average": int(total / days)
+    })
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def food_daily_comparison(request):
+    today = timezone.now().date()
+    yesterday = today - timedelta(days=1)
+
+    today_log = FoodLog.objects.filter(user=request.user, date=today).first()
+    yesterday_log = FoodLog.objects.filter(user=request.user, date=yesterday).first()
+
+    today_cal = today_log.calories if today_log else 0
+    yest_cal  = yesterday_log.calories if yesterday_log else 0
+
+    diff = today_cal - yest_cal
+
+    if diff > 0:
+        trend = "up"
+    elif diff < 0:
+        trend = "down"
+    else:
+        trend = "same"
+
+    return Response({
+        "today": today_cal,
+        "yesterday": yest_cal,
+        "difference": diff,
+        "trend": trend
+    })
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def food_monthly_heatmap(request):
+    today = timezone.now().date()
+    start = today.replace(day=1)
+
+    target = FoodTarget.objects.get(user=request.user)
+    logs = FoodLog.objects.filter(
+        user=request.user,
+        date__gte=start,
+        date__lte=today
+    )
+
+    data = {}
+
+    for log in logs:
+        diff = log.calories - target.calories
+
+        if abs(diff) <= target.calories * 0.05:
+            level = "perfect"
+        elif abs(diff) <= target.calories * 0.15:
+            level = "ok"
+        else:
+            level = "bad"
+
+        data[str(log.date)] = {
+            "calories": log.calories,
+            "level": level
+        }
+
+    return Response(data)
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def food_by_date(request):
+    date_str = request.GET.get("date")
+    if not date_str:
+        return Response({"error": "date required"}, status=400)
+
+    try:
+        date = datetime.strptime(date_str, "%Y-%m-%d").date()
+    except ValueError:
+        return Response({"error": "invalid date"}, status=400)
+
+    log = FoodLog.objects.filter(user=request.user, date=date).first()
+    target = FoodTarget.objects.get(user=request.user)
+
+    if not log:
+        return Response({"empty": True, "date": date_str})
+
+    return Response({
+        "date": date_str,
+        "log": {
+            "calories": log.calories,
+            "protein": log.protein,
+            "carbs": log.carbs,
+            "fats": log.fats,
+            "micronutrients": log.micronutrients,
+            "vitamins": log.vitamins,
+        },
+        "target": {
+            "calories": target.calories,
+            "protein": target.protein,
+            "carbs": target.carbs,
+            "fats": target.fats,
+        }
+    })
