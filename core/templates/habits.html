@@ -2,313 +2,241 @@
 {% block title %}Habits | Life RPG{% endblock %}
 {% block content %}
 
-<!-- ================= HEADER ================= -->
+<!-- HEADER -->
 <div class="flex items-center justify-between">
-    <div>
-        <h1 class="text-3xl font-bold text-yellow-400">Habits</h1>
-        <p class="mt-1 text-gray-400">Your daily discipline quests.</p>
-    </div>
+  <div>
+    <h1 class="text-3xl font-bold text-yellow-400">Habits</h1>
+    <p class="mt-1 text-gray-400">Your daily discipline quests.</p>
+  </div>
 
-    <div class="bg-gray-800 border border-gray-700 px-4 py-2 rounded-xl text-yellow-400 font-bold">
-        ⚡ XP: <span id="xpValue">0</span>
-    </div>
+  <div class="bg-gray-800 border border-gray-700 px-4 py-2 rounded-xl text-yellow-400 font-bold">
+    ⚡ XP: <span id="xpValue">0</span>
+  </div>
 </div>
 
 <!-- ADD HABIT -->
 <div class="mt-6">
-    <button onclick="openModal()"
-        class="px-4 py-2 bg-yellow-400 text-black rounded-lg font-semibold">
-        + Add Habit
-    </button>
+  <button onclick="openModal()"
+    class="px-4 py-2 bg-yellow-400 text-black rounded-lg font-semibold">
+    + Add Habit
+  </button>
 </div>
 
-<!-- ================= DAILY PROGRESS ================= -->
+<!-- DAILY PROGRESS -->
 <div class="mt-6 bg-gray-800 border border-gray-700 rounded-xl p-5">
-    <div class="flex justify-between mb-2">
-        <h3 class="font-semibold">Today’s Progress</h3>
-        <span id="dayPercent" class="text-yellow-400 font-bold">0%</span>
-    </div>
+  <div class="flex justify-between mb-2">
+    <h3 class="font-semibold">Today’s Progress</h3>
+    <span id="dayPercent" class="text-yellow-400 font-bold">0%</span>
+  </div>
 
-    <div class="w-full bg-gray-700 rounded-full h-3">
-        <div id="dayProgressBar"
-            class="bg-yellow-400 h-3 rounded-full transition-all"
-            style="width:0%"></div>
-    </div>
-
-    <p id="dayFeedback" class="mt-3 text-sm text-gray-300"></p>
+  <div class="w-full bg-gray-700 rounded-full h-3">
+    <div id="dayProgressBar"
+      class="bg-yellow-400 h-3 rounded-full transition-all"
+      style="width:0%"></div>
+  </div>
 </div>
 
-<!-- ================= DAILY REFLECTION ================= -->
-<div class="mt-6 bg-gray-800 border border-gray-700 rounded-xl p-5">
-    <div class="flex justify-between items-center mb-3">
-        <h3 class="font-semibold">Daily Reflection</h3>
-
-        <a href="/reflections/"
-           class="text-sm text-yellow-400 hover:underline">
-            📓 View History
-        </a>
-    </div>
-
-
-    <div class="flex gap-2 mb-3">
-        <button onclick="setMood(1)" class="moodBtn">😞</button>
-        <button onclick="setMood(2)" class="moodBtn">😐</button>
-        <button onclick="setMood(3)" class="moodBtn active">🙂</button>
-        <button onclick="setMood(4)" class="moodBtn">😀</button>
-        <button onclick="setMood(5)" class="moodBtn">🔥</button>
-    </div>
-
-    <textarea id="reflectionText"
-        class="w-full bg-gray-700 p-3 rounded"
-        placeholder="How did today feel?"></textarea>
-
-    <button onclick="saveReflection()"
-        class="mt-3 bg-yellow-400 px-4 py-2 rounded text-black font-semibold">
-        Save Reflection
-    </button>
-
-    <p id="reflectionStatus" class="hidden mt-2 text-green-400 text-sm">
-        Reflection saved ✔
-    </p>
-</div>
-
-<!-- ================= STREAKS ================= -->
+<!-- STREAKS -->
 <div class="grid grid-cols-2 gap-4 mt-6">
-    <div class="bg-gray-800 p-4 rounded border border-gray-700">
-        🔥 Daily Streak:
-        <span id="dailyStreak" class="text-yellow-400 font-bold">0</span>
-    </div>
-    <div class="bg-gray-800 p-4 rounded border border-gray-700">
-        🏆 Weekly Streak:
-        <span id="weeklyStreak" class="text-yellow-400 font-bold">0</span>
-    </div>
+  <div class="bg-gray-800 p-4 rounded border border-gray-700">
+    🔥 Daily Streak:
+    <span id="dailyStreak" class="text-yellow-400 font-bold">0</span>
+  </div>
+  <div class="bg-gray-800 p-4 rounded border border-gray-700">
+    🏆 Weekly Streak:
+    <span id="weeklyStreak" class="text-yellow-400 font-bold">0</span>
+  </div>
 </div>
 
-<!-- ================= WEEKLY PROGRESS ================= -->
+<!-- WEEKLY PROGRESS -->
 <div class="mt-8 bg-gray-800 p-5 rounded border border-gray-700">
-    <h3 class="font-semibold mb-4">Weekly Progress</h3>
-    <div id="weeklyBars" class="flex items-end gap-2 h-32"></div>
+  <h3 class="font-semibold mb-4">Weekly Progress</h3>
+  <div id="weeklyBars" class="flex items-end gap-2 h-32"></div>
 </div>
 
-<!-- ================= MONTHLY HEATMAP ================= -->
+<!-- MONTHLY HEATMAP -->
 <div class="mt-8 bg-gray-800 p-5 rounded border border-gray-700">
-    <h3 class="font-semibold mb-4">Monthly Activity</h3>
-    <div id="heatmap" class="grid grid-cols-7 gap-1"></div>
+  <h3 class="font-semibold mb-4">Monthly Activity</h3>
+  <div id="heatmap" class="grid grid-cols-7 gap-2"></div>
 </div>
 
-<!-- ================= HABITS LIST ================= -->
+<!-- HABITS LIST -->
 <div id="habitsList" class="mt-8 space-y-4"></div>
 
-<!-- ================= MODAL ================= -->
+<!-- MODAL -->
 <div id="habitModal"
-     class="fixed inset-0 bg-black/70 hidden items-center justify-center z-50">
-    <div class="bg-gray-900 border border-gray-700 rounded-xl p-6 w-full max-w-md">
+  class="fixed inset-0 bg-black/70 hidden items-center justify-center z-50">
+  <div class="bg-gray-900 border border-gray-700 rounded-xl p-6 w-full max-w-md">
 
-        <div class="flex justify-between mb-4">
-            <h2 class="text-yellow-400 font-bold">Add / Edit Habit</h2>
-            <button onclick="closeModal()">✖</button>
-        </div>
-
-        <input id="habitName" class="w-full mb-3 p-2 bg-gray-800 rounded" placeholder="Habit name">
-        <input id="habitTime" type="time" class="w-full mb-3 p-2 bg-gray-800 rounded">
-        <select id="habitDifficulty" class="w-full mb-3 p-2 bg-gray-800 rounded">
-            <option>Easy</option>
-            <option>Medium</option>
-            <option>Hard</option>
-        </select>
-
-        <button onclick="saveHabit()"
-            class="w-full bg-yellow-400 text-black py-2 rounded">
-            Save Habit
-        </button>
+    <div class="flex justify-between mb-4">
+      <h2 class="text-yellow-400 font-bold">Add / Edit Habit</h2>
+      <button onclick="closeModal()">✖</button>
     </div>
+
+    <input id="habitName" class="w-full mb-3 p-2 bg-gray-800 rounded" placeholder="Habit name">
+    <input id="habitTime" type="time" class="w-full mb-3 p-2 bg-gray-800 rounded">
+    <select id="habitDifficulty" class="w-full mb-3 p-2 bg-gray-800 rounded">
+      <option>Easy</option>
+      <option>Medium</option>
+      <option>Hard</option>
+    </select>
+
+    <button onclick="saveHabit()"
+      class="w-full bg-yellow-400 text-black py-2 rounded">
+      Save Habit
+    </button>
+  </div>
 </div>
 
-<!-- ================= STYLES ================= -->
 <style>
-.moodBtn {
-    background:#374151;
-    padding:6px 10px;
-    border-radius:8px;
-    font-size:20px;
+.heat-day{
+  width:28px;
+  height:28px;
+  border-radius:6px;
+  background:#374151;
 }
-.moodBtn.active { background:#facc15 }
+.heat-perfect{ background:#22c55e; }
+.heat-ok{ background:#facc15; }
+.heat-none{ background:#374151; }
 </style>
 
-<!-- ================= JAVASCRIPT ================= -->
 <script>
 let habitsCache = [];
 let editingHabitId = null;
-let selectedMood = 3;
 
 function auth(json=false){
-    const t = localStorage.getItem("access_token");
-    return {
-        headers:{
-            Authorization:`Bearer ${t}`,
-            ...(json && {"Content-Type":"application/json"})
-        }
+  const t = localStorage.getItem("access_token");
+  return {
+    headers:{
+      Authorization:`Bearer ${t}`,
+      ...(json && {"Content-Type":"application/json"})
     }
+  }
 }
 
-/* ---------- HABITS ---------- */
+/* HABITS */
 async function loadHabits(){
-    const r = await fetch("/api/habits/", auth());
-    habitsCache = await r.json();
-    habitsList.innerHTML = "";
+  const r = await fetch("/api/habits/", auth());
+  habitsCache = await r.json();
+  habitsList.innerHTML = "";
 
-    habitsCache.forEach(h => {
-        const actionBtn = h.done
-            ? `<button onclick="toggleHabit(${h.id})" class="bg-gray-600 px-2 rounded">Undo</button>`
-            : `<button onclick="toggleHabit(${h.id})" class="bg-green-500 px-2 rounded">Done</button>`;
-
-        habitsList.innerHTML += `
-        <div class="bg-gray-800 p-4 rounded flex justify-between">
-            <div>
-                <div class="font-semibold">${h.name}</div>
-                <small class="text-gray-400">${h.time} · ${h.difficulty}</small>
-            </div>
-            <div class="flex gap-2">
-                ${actionBtn}
-                <button onclick="editHabit(${h.id})" class="bg-blue-500 px-2 rounded">Edit</button>
-                <button onclick="deleteHabit(${h.id})" class="bg-red-500 px-2 rounded">Del</button>
-            </div>
-        </div>`;
-    });
+  habitsCache.forEach(h=>{
+    habitsList.innerHTML += `
+    <div class="bg-gray-800 p-4 rounded flex justify-between">
+      <div>
+        <div class="font-semibold">${h.name}</div>
+        <small class="text-gray-400">${h.time} · ${h.difficulty}</small>
+      </div>
+      <button onclick="toggleHabit(${h.id})"
+        class="${h.done ? "bg-gray-600" : "bg-green-500"} px-2 rounded">
+        ${h.done ? "Undo" : "Done"}
+      </button>
+    </div>`;
+  });
 }
 
 async function toggleHabit(id){
-    const r = await fetch(`/api/habits/${id}/toggle/`, {method:"POST", ...auth()});
-    const d = await r.json();
-    xpValue.innerText = d.xp;
-    loadAll();
+  const r = await fetch(`/api/habits/${id}/toggle/`, {method:"POST", ...auth()});
+  const d = await r.json();
+  xpValue.innerText = d.xp;
+  loadAll();
 }
 
-function editHabit(id){
-    const h = habitsCache.find(x=>x.id===id);
-    openModal(h);
+/* PROGRESS */
+async function loadDailyProgress(){
+  const r = await fetch("/api/habits/progress/daily/", auth());
+  const d = await r.json();
+  dayPercent.innerText = d.percent + "%";
+  dayProgressBar.style.width = d.percent + "%";
 }
 
-async function deleteHabit(id){
-    await fetch("/api/habits/", {method:"DELETE", ...auth(true), body:JSON.stringify({id})});
-    loadHabits();
+async function loadWeeklyProgress(){
+  const r = await fetch("/api/habits/progress/weekly/", auth());
+  const d = await r.json();
+
+  weeklyBars.innerHTML = "";
+  Object.entries(d.days).forEach(([day,count])=>{
+    weeklyBars.innerHTML += `
+    <div class="flex-1">
+      <div class="bg-yellow-400 rounded" style="height:${count*15}px"></div>
+    </div>`;
+  });
+
+  dailyStreak.innerText = d.daily_streak;
+  weeklyStreak.innerText = d.weekly_streak;
 }
 
-/* ---------- MODAL ---------- */
-function openModal(h=null){
-    habitModal.classList.remove("hidden");
-    habitModal.classList.add("flex");
+/* MONTHLY HEATMAP */
+async function loadMonthlyHeatmap(){
+  const r = await fetch("/api/habits/monthly/", auth());
+  const data = await r.json();
+  heatmap.innerHTML = "";
 
-    if(h){
-        editingHabitId = h.id;
-        habitName.value = h.name;
-        habitTime.value = h.time;
-        habitDifficulty.value = h.difficulty.charAt(0).toUpperCase()+h.difficulty.slice(1);
-    } else {
-        editingHabitId = null;
-        habitName.value = "";
-        habitTime.value = "";
-        habitDifficulty.value = "Easy";
-    }
+  Object.entries(data).forEach(([date,count])=>{
+    let level = "none";
+    if(count >= 5) level = "perfect";
+    else if(count > 0) level = "ok";
+
+    const cell = document.createElement("div");
+    cell.className = `heat-day heat-${level}`;
+    cell.title = `${date}: ${count} habits`;
+    cell.onclick = ()=>loadHabitsByDate(date);
+
+    heatmap.appendChild(cell);
+  });
+}
+
+async function loadHabitsByDate(date){
+  const r = await fetch(`/api/habits/by-date/?date=${date}`, auth());
+  const habits = await r.json();
+
+  habitsList.innerHTML = `<h3 class="text-yellow-400 mb-3">Habits on ${date}</h3>`;
+  habits.forEach(h=>{
+    habitsList.innerHTML += `
+    <div class="bg-gray-800 p-4 rounded flex justify-between">
+      <span>${h.name}</span>
+      <span>${h.done ? "✅" : "❌"}</span>
+    </div>`;
+  });
+}
+
+/* XP */
+async function loadXP(){
+  const r = await fetch("/api/xp/", auth());
+  xpValue.innerText = (await r.json()).xp;
+}
+
+/* MODAL */
+function openModal(){
+  habitModal.classList.remove("hidden");
+  habitModal.classList.add("flex");
 }
 function closeModal(){
-    habitModal.classList.add("hidden");
-    habitModal.classList.remove("flex");
+  habitModal.classList.add("hidden");
+  habitModal.classList.remove("flex");
 }
 
 async function saveHabit(){
-    const payload = {
-        name: habitName.value,
-        time: habitTime.value,
-        difficulty: habitDifficulty.value.toLowerCase()
-    };
-    let method="POST";
-    if(editingHabitId){ method="PUT"; payload.id=editingHabitId }
-
-    await fetch("/api/habits/", {method, ...auth(true), body:JSON.stringify(payload)});
-    closeModal();
-    loadHabits();
+  await fetch("/api/habits/", {
+    method:"POST",
+    ...auth(true),
+    body:JSON.stringify({
+      name:habitName.value,
+      time:habitTime.value,
+      difficulty:habitDifficulty.value.toLowerCase()
+    })
+  });
+  closeModal();
+  loadHabits();
 }
 
-/* ---------- DAILY PROGRESS ---------- */
-async function loadDailyProgress(){
-    const r = await fetch("/api/habits/progress/daily/", auth());
-    const d = await r.json();
-    dayPercent.innerText = `${d.percent}%`;
-    dayProgressBar.style.width = `${d.percent}%`;
-}
-
-/* ---------- WEEKLY ---------- */
-async function loadWeeklyProgress(){
-    const r = await fetch("/api/habits/progress/weekly/", auth());
-    const d = await r.json();
-
-    weeklyBars.innerHTML = "";
-    Object.entries(d.days).forEach(([day,count])=>{
-        weeklyBars.innerHTML += `
-        <div class="relative group flex-1">
-            <div class="bg-yellow-400 rounded" style="height:${count*15}px"></div>
-            <div class="absolute bottom-full hidden group-hover:block text-xs bg-black px-2 py-1 rounded border border-gray-600">
-                ${day}: ${count} habits
-            </div>
-        </div>`;
-    });
-
-    dailyStreak.innerText = d.daily_streak;
-    weeklyStreak.innerText = d.weekly_streak;
-}
-
-/* ---------- MONTHLY ---------- */
-async function loadMonthlyHeatmap(){
-    const r = await fetch("/api/habits/progress/monthly/", auth());
-    const data = await r.json();
-    heatmap.innerHTML = "";
-
-    Object.entries(data).forEach(([date,count])=>{
-        let color="bg-gray-700";
-        if(count>=1) color="bg-green-700";
-        if(count>=3) color="bg-green-500";
-        if(count>=5) color="bg-green-400";
-
-        heatmap.innerHTML += `
-        <div class="relative group">
-            <div class="w-4 h-4 ${color} rounded"></div>
-            <div class="absolute bottom-full hidden group-hover:block text-xs bg-black px-2 py-1 rounded border border-gray-600">
-                ${date}: ${count} habits
-            </div>
-        </div>`;
-    });
-}
-
-/* ---------- XP ---------- */
-async function loadXP(){
-    const r = await fetch("/api/xp/", auth());
-    xpValue.innerText = (await r.json()).xp;
-}
-
-/* ---------- REFLECTION ---------- */
-function setMood(m){
-    selectedMood = m;
-    document.querySelectorAll(".moodBtn").forEach(b=>b.classList.remove("active"));
-    document.querySelectorAll(".moodBtn")[m-1].classList.add("active");
-}
-
-async function saveReflection(){
-    await fetch("/api/reflection/", {
-        method:"POST", ...auth(true),
-        body:JSON.stringify({mood:selectedMood, note:reflectionText.value})
-    });
-    reflectionStatus.classList.remove("hidden");
-    setTimeout(()=>reflectionStatus.classList.add("hidden"),2000);
-}
-
-/* ---------- INIT ---------- */
+/* INIT */
 function loadAll(){
-    loadHabits();
-    loadXP();
-    loadDailyProgress();
-    loadWeeklyProgress();
-    loadMonthlyHeatmap();
+  loadHabits();
+  loadXP();
+  loadDailyProgress();
+  loadWeeklyProgress();
+  loadMonthlyHeatmap();
 }
 loadAll();
 </script>
